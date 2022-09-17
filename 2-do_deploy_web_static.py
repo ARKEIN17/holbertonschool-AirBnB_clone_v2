@@ -5,7 +5,7 @@ Module send an archive to your web servers
 from os import *
 from fabric.api import *
 env.user = 'ubuntu'
-env.hosts = ['35.229.20.253', '34.207.145.16']
+env.hosts = ['18.212.203.20', '54.224.55.58']
 
 
 def do_deploy(archive_path):
