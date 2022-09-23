@@ -1,29 +1,49 @@
 #!/usr/bin/python3
-"""
-Module send an archive to your web servers
-"""
-from os import *
-from fabric.api import *
+"""a Fabric script (based on the file 1-pack_web_static.py)
+    that distributes
+    an archive to your web servers,
+    using the function do_deploy:"""
+from fabric.api import local, run, put
+from fabric.api import env
+from os.path import exists, isdir
+import time
+env.hosts = ['54.224.55.58']
 env.user = 'ubuntu'
-env.hosts = ['18.212.203.20', '54.224.55.58']
+env.key = '~/.ssh/school'
+
+
+def do_pack():
+    """Funtion to generates the file"""
+
+    if isdir('versions') is False:
+        local("mkdir versions")
+    file = "web_static_" + time.strftime("%Y%m%d%H%M%S", time.gmtime())\
+        + ".tgz"
+    result = local("tar -cvzf versions/{} web_static ".format(file))
+    if result.failed:
+        return None
+    return result
 
 
 def do_deploy(archive_path):
-    """Send an archive to your web servers"""
-    if archive_path is None:
+    """Funtion to distrubutes archives"""
+
+    if exists(archive_path) is False:
         return False
     try:
-        nfile = archive_path.split("/")[-1]
-        npath = nfile.split(".")[0]
-        path = "/data/web_static/releases/"
-        put(archive_path, '/tmp/')
-        run('mkdir -p {}{}/'.format(path, npath))
-        run('sudo tar -xzf /tmp/{} -C {}{}/'.format(nfile, path, npath))
-        run('sudo rm /tmp/{}'.format(nfile))
-        run('sudo mv {0}{1}/web_static/* {0}{1}/'.format(path, npath))
-        run('sudo rm -rf {}{}/web_static'.format(path, npath))
-        run('sudo rm -rf /data/web_static/current')
-        run('sudo ln -s {}{}/ /data/web_static/current'.format(path, npath))
+        paths = archive_path.split("/")
+        rute = paths[1].strip('.tgz')
+        put("{}".format(archive_path), "/tmp/{}".format(paths[1]))
+        run("mkdir -p /data/web_static/releases/{}/".format(rute))
+        run("tar -xzf /tmp/{} -C\
+            /data/web_static/releases/{}/".format(paths[1], rute))
+        run("rm /tmp/{}".format(paths[1]))
+        run("mv /data/web_static/releases/{}/web_static/*\
+            /data/web_static/releases/{}/".format(rute, rute))
+        run("rm -rf /data/web_static/releases/{}/web_static".format(rute))
+        run("rm -rf /data/web_static/current")
+        run("ln -s /data/web_static/releases/{}/\
+            /data/web_static/current".format(rute))
+        return True
     except Exception:
         return False
-    return True
